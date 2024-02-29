@@ -60,3 +60,21 @@ def fechaVencimiento(id: str = Query(max_length=max_lenght_username), curso: str
             return student_date#JSONResponse(status_code=200, content={'info': student_date, 'message': "La información del estudiante fue encontrada exitosamente."})
         else:
             return JSONResponse(status_code=404, content={'message': "La información del estudiante no pudo ser encontrada"})
+        
+#Servicio para devolver la url del certificado de un curso completado
+@estudiante_router.get("/estudiante/certificado/", tags=['estudiante'], status_code=200, dependencies=[Depends(JWTBearer())])
+def certi_estudiante(id: str = Query(max_length=max_lenght_username), curso: str = Query(max_length=max_lenght_courseshortname)):
+    with engine.connect() as connection:
+        consulta_sql = text(f"""
+            SELECT  CONCAT('https://elaulavirtual.com/ins/mod/customcert/view.php?id=',cm.id,'&downloadissue=',u.id) as url_downoload
+            FROM    mdl_user u, mdl_course_modules cm
+            JOIN    mdl_course c on (cm.course=c.id)
+            WHERE   (cm.module=24) AND (u.username= :id) AND (c.shortname= :curso);
+        """).params(curso=curso, id=id)
+        result = connection.execute(consulta_sql)
+        rows = result.fetchall()
+        if rows:
+            cert_url = [{'url': row[0]} for row in rows]
+            return JSONResponse(status_code=200, content={'url': cert_url, 'message': "La url del certificado del estudiante fue encontrada exitosamente."})
+        else:
+            return JSONResponse(status_code=404, content={'message': "El certificado del estudiante no pudo ser encontrado"})
