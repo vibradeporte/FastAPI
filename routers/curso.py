@@ -7,7 +7,7 @@ from fastapi import APIRouter, Query, Depends
 from jwt_manager import JWTBearer
 
 max_lenght_username = 12
-max_lenght_courseshortname = 25
+max_lenght_courseshortname = 35
 
 load_dotenv()
 usuario = os.getenv("USER_DB")
@@ -56,7 +56,7 @@ def read_courses_certi(id : str = Query(max_length=max_lenght_username)):
         result = connection.execute(consulta_sql)
         rows = result.fetchall()
         if rows:
-            course_data = [{'shortname': row[0], 'timecreated': row[2]} for row in rows]
+            course_data = [{'shortname': row[0], 'largename': row[1], 'timecreated': row[2]} for row in rows]
             return course_data#JSONResponse(status_code=200, content={'courses': course_data, 'message': "Los cursos certificados del usuario han sido obtenidos correctamente"})
         else:
             return JSONResponse(status_code=404, content={'message': "El usuario digitado no se encuentra certificado en ningún curso o el usuario no existe"})
