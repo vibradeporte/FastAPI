@@ -7,7 +7,9 @@ from fastapi import APIRouter, Query, Depends
 from jwt_manager import JWTBearer
 
 max_lenght_username = 12
-max_lenght_courseshortname = 35
+max_lenght_courseshortname = 37
+ge_days = 1
+le_days = 50
 
 load_dotenv()
 usuario = os.getenv("USER_DB")
@@ -35,7 +37,7 @@ def info_estudiante(id: str = Query(max_length=max_lenght_username)):
         result = connection.execute(consulta_sql)
         rows = result.fetchall()
         if rows:
-            student_data = [{'firstname': row[2], 'lastname': row[3], 'email': row[4], 'phone': row[5], 'city': row[6], 'country': row[7]} for row in rows]
+            student_data = [{'userid': row[0], 'firstname': row[2], 'lastname': row[3], 'email': row[4], 'phone': row[5], 'city': row[6], 'country': row[7]} for row in rows]
             return JSONResponse(status_code=200, content={'info': student_data, 'message': "La información del estudiante fue encontrada exitosamente."})
         else:
             return JSONResponse(status_code=404, content={'message': "La información del estudiante no pudo ser encontrada"})
@@ -78,3 +80,25 @@ def certi_estudiante(id: str = Query(max_length=max_lenght_username), curso: str
             return JSONResponse(status_code=200, content={'url': cert_url, 'message': "La url del certificado del estudiante fue encontrada exitosamente."})
         else:
             return JSONResponse(status_code=404, content={'message': "El certificado del estudiante no pudo ser encontrado"})
+
+#Servicio para actualizar la fecha de finalización de matricula de un estudiante en un curso
+@estudiante_router.put("/estudiante/ampliar_matricula/", tags=['estudiante'], status_code=200, dependencies=[Depends(JWTBearer())])
+def ampliar_matricula(dias: int = Query(ge=ge_days, le=le_days), id: str = Query(max_length=max_lenght_username), curso: str = Query(max_length=max_lenght_courseshortname)):
+    with engine.connect() as connection:
+        update_sql = text(f"""
+            UPDATE  mdl_user_enrolments
+            SET     timeend =   timeend + ( :dias * 86400) -- 86400 segundos = 1 día
+            WHERE   userid =    (SELECT u.id as userid FROM mdl_user as u WHERE u.username = :id)
+            AND     enrolid =   (SELECT ue.enrolid as enrolid
+                                FROM    mdl_user_enrolments as ue
+                                JOIN    mdl_user as u ON (u.id=ue.userid)
+                                JOIN    mdl_enrol as e ON (ue.enrolid=e.id)
+                                JOIN    mdl_course as c ON (c.id=e.courseid)
+                                WHERE   (c.shortname = :curso) AND (u.username = :id));
+        """).params(dias=dias, curso=curso, id=id)
+        try:
+            connection.execute(update_sql)
+            connection.commit()
+            return JSONResponse(status_code=200, content={'message': "Los datos fueron actualizados exitosamente."})
+        except Exception as e:
+            return e#JSONResponse(status_code=400, content={'message': e})

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Query, Depends
 from jwt_manager import JWTBearer
 
 max_lenght_username = 12
-max_lenght_courseshortname = 35
+max_lenght_courseshortname = 37
 
 load_dotenv()
 usuario = os.getenv("USER_DB")
