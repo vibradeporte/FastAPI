@@ -9,7 +9,7 @@ from jwt_manager import JWTBearer
 max_lenght_username = 12
 max_lenght_courseshortname = 37
 ge_days = 1
-le_days = 50
+le_days = 140
 
 load_dotenv()
 usuario = os.getenv("USER_DB")
@@ -95,6 +95,28 @@ def ampliar_matricula(dias: int = Query(ge=ge_days, le=le_days), id: str = Query
                                 JOIN    mdl_enrol as e ON (ue.enrolid=e.id)
                                 JOIN    mdl_course as c ON (c.id=e.courseid)
                                 WHERE   (c.shortname = :curso) AND (u.username = :id));
+        """).params(dias=dias, curso=curso, id=id)
+        try:
+            connection.execute(update_sql)
+            connection.commit()
+            return JSONResponse(status_code=200, content={'message': "Los datos fueron actualizados exitosamente."})
+        except Exception as e:
+            return e#JSONResponse(status_code=400, content={'message': e})
+        
+#Servicio para rematricular a un estudiante en un curso
+@estudiante_router.put("/estudiante/rematricula/", tags=['estudiante'], status_code=200, dependencies=[Depends(JWTBearer())])
+def reactivar_matricula(dias: int = Query(ge=ge_days, le=le_days), id: str = Query(max_length=max_lenght_username), curso: str = Query(max_length=max_lenght_courseshortname)):
+    with engine.connect() as connection:
+        update_sql = text(f"""
+            UPDATE mdl_user_enrolments 
+            SET timestart = UNIX_TIMESTAMP(), timeend = UNIX_TIMESTAMP() + (:dias * 86400) -- 86400 segundos = 1 día
+            WHERE userid = (SELECT u.id as userid FROM mdl_user as u WHERE u.username= :id)
+                            AND enrolid = (SELECT   ue.enrolid as enrolid   
+                            FROM mdl_user_enrolments as ue
+                            JOIN mdl_user as u ON (u.id=ue.userid)
+                            JOIN mdl_enrol as e ON (ue.enrolid=e.id)
+                            JOIN mdl_course as c ON (c.id=e.courseid)
+                            WHERE   (c.shortname= :curso) AND (u.username= :id));
         """).params(dias=dias, curso=curso, id=id)
         try:
             connection.execute(update_sql)
