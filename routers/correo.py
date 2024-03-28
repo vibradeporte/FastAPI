@@ -18,7 +18,6 @@ class EmailSchema(BaseModel):
 
 load_dotenv()
 AUTH_KEY = os.getenv("AUTH_KEY")
-CS_KEY = os.getenv("CS_KEY")
 MVAPI_KEY = os.getenv("MVAPI_KEY")
 API_URL = "https://api.turbo-smtp.com/api/v2/mail/send"
 AUTH_USER_TSMTP = os.getenv("AUTH_USER_TSMTP")
