@@ -5,6 +5,7 @@ from routers.userlog import userlog_router
 from routers.estudiantes import estudiante_router
 from routers.modulo import modulo_router
 from routers.correo import correo_router
+from routers.comparacion_json import comparacion_router
 
 
 app = FastAPI()
@@ -16,6 +17,7 @@ app.include_router(userlog_router)
 app.include_router(estudiante_router)
 app.include_router(modulo_router)
 app.include_router(correo_router)
+app.include_router(comparacion_router)
 
 @app.get('/', tags=['home'])
 def message():
