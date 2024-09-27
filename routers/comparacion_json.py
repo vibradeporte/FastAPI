@@ -2,12 +2,21 @@ import json
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter, Query, Depends
 from jwt_manager import JWTBearer
+from pydantic import BaseModel, Field
+from typing import List
+
+class jsonsSchema(BaseModel):
+    json_1: List[dict]
+    json_2: List[dict]
 
 comparacion_router = APIRouter()
 
 #Consultar en cuales cursos esta registrado un usuario.
-@comparacion_router.get("/comparacion/", tags=['extra'], status_code=200, dependencies=[Depends(JWTBearer())])
-def comparacion(json_1: str, json_2: str):
+@comparacion_router.post("/comparacion/", tags=['extra'], status_code=200, dependencies=[Depends(JWTBearer())])
+def comparacion(jsons: jsonsSchema):
+
+    json_1 = jsons.json_1
+    json_2 = jsons.json_2
 
     if isinstance(json_1, str):
         json_1 = json.loads(json_1)  
